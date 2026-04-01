@@ -102,8 +102,9 @@ jobs:
         APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
       run: |
-        API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8
-        echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode -o $API_KEY_PATH
+        # altool looks for AuthKey in ~/private_keys/
+        mkdir -p ~/private_keys
+        echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode -o ~/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
         xcrun altool --upload-app \
           -f $RUNNER_TEMP/export/ForwardText.ipa \
