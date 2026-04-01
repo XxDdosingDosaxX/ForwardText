@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     iOS: "16.0"
   xcodeVersion: "15.4"
+  fileTypes:
+    .swift:
+      buildPhase: sources
+  projectFormatVersion: "Xcode 15.0-compatible"
 
 settings:
   base:

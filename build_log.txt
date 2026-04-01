@@ -1,0 +1,244 @@
+﻿2026-04-01T02:21:14.2875820Z Current runner version: '2.333.1'
+2026-04-01T02:21:14.2891400Z ##[group]Runner Image Provisioner
+2026-04-01T02:21:14.2891960Z Hosted Compute Agent
+2026-04-01T02:21:14.2892340Z Version: 20260213.493
+2026-04-01T02:21:14.2892760Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-04-01T02:21:14.2893250Z Build Date: 2026-02-13T00:28:41Z
+2026-04-01T02:21:14.2893690Z Worker ID: {315074fe-3018-4ae2-b8f0-322932111bae}
+2026-04-01T02:21:14.2894140Z Azure Region: westus
+2026-04-01T02:21:14.2894510Z ##[endgroup]
+2026-04-01T02:21:14.2895360Z ##[group]Operating System
+2026-04-01T02:21:14.2895750Z macOS
+2026-04-01T02:21:14.2896070Z 14.8.5
+2026-04-01T02:21:14.2896380Z 23J423
+2026-04-01T02:21:14.2896710Z ##[endgroup]
+2026-04-01T02:21:14.2897070Z ##[group]Runner Image
+2026-04-01T02:21:14.2897440Z Image: macos-14-arm64
+2026-04-01T02:21:14.2897820Z Version: 20260330.0199.1
+2026-04-01T02:21:14.2898630Z Included Software: https://github.com/actions/runner-images/blob/macos-14-arm64/20260330.0199/images/macos/macos-14-arm64-Readme.md
+2026-04-01T02:21:14.2899810Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-14-arm64%2F20260330.0199
+2026-04-01T02:21:14.2900460Z ##[endgroup]
+2026-04-01T02:21:14.2901250Z ##[group]GITHUB_TOKEN Permissions
+2026-04-01T02:21:14.2902330Z Contents: read
+2026-04-01T02:21:14.2902690Z Metadata: read
+2026-04-01T02:21:14.2903050Z Packages: read
+2026-04-01T02:21:14.2903410Z ##[endgroup]
+2026-04-01T02:21:14.2905010Z Secret source: Actions
+2026-04-01T02:21:14.2905560Z Prepare workflow directory
+2026-04-01T02:21:14.3121760Z Prepare all required actions
+2026-04-01T02:21:14.3151930Z Getting action download info
+2026-04-01T02:21:14.7408230Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-04-01T02:21:15.1198180Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-04-01T02:21:15.3463670Z Complete job name: build
+2026-04-01T02:21:15.3866350Z ##[group]Run actions/checkout@v4
+2026-04-01T02:21:15.3866960Z with:
+2026-04-01T02:21:15.3867390Z   repository: XxDdosingDosaxX/ForwardText
+2026-04-01T02:21:15.3868160Z   token: ***
+2026-04-01T02:21:15.3868460Z   ssh-strict: true
+2026-04-01T02:21:15.3868760Z   ssh-user: git
+2026-04-01T02:21:15.3869070Z   persist-credentials: true
+2026-04-01T02:21:15.3869400Z   clean: true
+2026-04-01T02:21:15.3869720Z   sparse-checkout-cone-mode: true
+2026-04-01T02:21:15.3870080Z   fetch-depth: 1
+2026-04-01T02:21:15.3870430Z   fetch-tags: false
+2026-04-01T02:21:15.3870750Z   show-progress: true
+2026-04-01T02:21:15.3871210Z   lfs: false
+2026-04-01T02:21:15.3871520Z   submodules: false
+2026-04-01T02:21:15.3871850Z   set-safe-directory: true
+2026-04-01T02:21:15.3872300Z ##[endgroup]
+2026-04-01T02:21:15.8080070Z Syncing repository: XxDdosingDosaxX/ForwardText
+2026-04-01T02:21:15.8082790Z ##[group]Getting Git version info
+2026-04-01T02:21:15.8083530Z Working directory is '/Users/runner/work/ForwardText/ForwardText'
+2026-04-01T02:21:15.8084870Z [command]/opt/homebrew/bin/git version
+2026-04-01T02:21:15.8648130Z git version 2.53.0
+2026-04-01T02:21:15.8672790Z ##[endgroup]
+2026-04-01T02:21:15.8684020Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/cb29147a-abc4-47ec-b64b-ae116ac09b2a/.gitconfig'
+2026-04-01T02:21:15.8690530Z Temporarily overriding HOME='/Users/runner/work/_temp/cb29147a-abc4-47ec-b64b-ae116ac09b2a' before making global git config changes
+2026-04-01T02:21:15.8691670Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-01T02:21:15.8694320Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/ForwardText/ForwardText
+2026-04-01T02:21:15.8776390Z Deleting the contents of '/Users/runner/work/ForwardText/ForwardText'
+2026-04-01T02:21:15.8778750Z ##[group]Initializing the repository
+2026-04-01T02:21:15.8783200Z [command]/opt/homebrew/bin/git init /Users/runner/work/ForwardText/ForwardText
+2026-04-01T02:21:15.8976020Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-04-01T02:21:15.8977500Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-04-01T02:21:15.8978280Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-04-01T02:21:15.8978830Z hint: call:
+2026-04-01T02:21:15.8979160Z hint:
+2026-04-01T02:21:15.8979570Z hint: 	git config --global init.defaultBranch <name>
+2026-04-01T02:21:15.8980000Z hint:
+2026-04-01T02:21:15.8980430Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-04-01T02:21:15.8981090Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-04-01T02:21:15.8981610Z hint:
+2026-04-01T02:21:15.8981930Z hint: 	git branch -m <name>
+2026-04-01T02:21:15.8982280Z hint:
+2026-04-01T02:21:15.8982740Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-04-01T02:21:15.8983480Z Initialized empty Git repository in /Users/runner/work/ForwardText/ForwardText/.git/
+2026-04-01T02:21:15.8985470Z [command]/opt/homebrew/bin/git remote add origin https://github.com/XxDdosingDosaxX/ForwardText
+2026-04-01T02:21:15.9042670Z ##[endgroup]
+2026-04-01T02:21:15.9043440Z ##[group]Disabling automatic garbage collection
+2026-04-01T02:21:15.9045190Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-04-01T02:21:15.9094700Z ##[endgroup]
+2026-04-01T02:21:15.9095330Z ##[group]Setting up auth
+2026-04-01T02:21:15.9099660Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-04-01T02:21:15.9143150Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-04-01T02:21:16.0075610Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-01T02:21:16.0124430Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-04-01T02:21:16.0705330Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-04-01T02:21:16.0750060Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-04-01T02:21:16.1268100Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-04-01T02:21:16.1316360Z ##[endgroup]
+2026-04-01T02:21:16.1317180Z ##[group]Fetching the repository
+2026-04-01T02:21:16.1321350Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +eb1bfdd43db94c9a42bf40b5ca3d7d4f1055e8ad:refs/remotes/origin/main
+2026-04-01T02:21:16.6501230Z From https://github.com/XxDdosingDosaxX/ForwardText
+2026-04-01T02:21:16.6504190Z  * [new ref]         eb1bfdd43db94c9a42bf40b5ca3d7d4f1055e8ad -> origin/main
+2026-04-01T02:21:16.6608130Z ##[endgroup]
+2026-04-01T02:21:16.6609210Z ##[group]Determining the checkout info
+2026-04-01T02:21:16.6610250Z ##[endgroup]
+2026-04-01T02:21:16.6610990Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-04-01T02:21:16.6654700Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-04-01T02:21:16.6689330Z ##[group]Checking out the ref
+2026-04-01T02:21:16.6691280Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-04-01T02:21:16.6812060Z Switched to a new branch 'main'
+2026-04-01T02:21:16.6823640Z branch 'main' set up to track 'origin/main'.
+2026-04-01T02:21:16.6846580Z ##[endgroup]
+2026-04-01T02:21:16.6937430Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-04-01T02:21:16.6939720Z eb1bfdd43db94c9a42bf40b5ca3d7d4f1055e8ad
+2026-04-01T02:21:16.7088140Z ##[group]Run sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+2026-04-01T02:21:16.7090010Z [36;1msudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer[0m
+2026-04-01T02:21:16.7150850Z shell: /bin/bash -e {0}
+2026-04-01T02:21:16.7151860Z ##[endgroup]
+2026-04-01T02:21:16.7704090Z ##[group]Run brew install xcodegen
+2026-04-01T02:21:16.7705100Z [36;1mbrew install xcodegen[0m
+2026-04-01T02:21:16.7765900Z shell: /bin/bash -e {0}
+2026-04-01T02:21:16.7766730Z ##[endgroup]
+2026-04-01T02:21:20.5612010Z [32m==>[0m [1mFetching downloads for: [32mxcodegen[39m[0m
+2026-04-01T02:21:21.0105630Z ✔︎ Bottle Manifest xcodegen (2.45.3)
+2026-04-01T02:21:21.6832700Z ✔︎ Bottle xcodegen (2.45.3)
+2026-04-01T02:21:21.7626120Z [34m==>[0m [1mPouring xcodegen--2.45.3.arm64_sonoma.bottle.tar.gz[0m
+2026-04-01T02:21:23.2310660Z 🍺  /opt/homebrew/Cellar/xcodegen/2.45.3: 38 files, 7.6MB
+2026-04-01T02:21:23.2698020Z ##[group]Run xcodegen generate
+2026-04-01T02:21:23.2698320Z [36;1mxcodegen generate[0m
+2026-04-01T02:21:23.2751180Z shell: /bin/bash -e {0}
+2026-04-01T02:21:23.2751420Z ##[endgroup]
+2026-04-01T02:21:23.3241440Z ⚙️  Generating plists...
+2026-04-01T02:21:23.3243750Z ⚙️  Generating project...
+2026-04-01T02:21:23.3311490Z ⚙️  Writing project...
+2026-04-01T02:21:23.3354020Z Created project at /Users/runner/work/ForwardText/ForwardText/ForwardText.xcodeproj
+2026-04-01T02:21:23.3409400Z ##[group]Run CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+2026-04-01T02:21:23.3409980Z [36;1mCERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12[0m
+2026-04-01T02:21:23.3410530Z [36;1mPP_PATH=$RUNNER_TEMP/build_pp.mobileprovision[0m
+2026-04-01T02:21:23.3410960Z [36;1mKEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db[0m
+2026-04-01T02:21:23.3411390Z [36;1m[0m
+2026-04-01T02:21:23.3411840Z [36;1mecho -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH[0m
+2026-04-01T02:21:23.3412450Z [36;1mecho -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH[0m
+2026-04-01T02:21:23.3412940Z [36;1m[0m
+2026-04-01T02:21:23.3413400Z [36;1msecurity create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH[0m
+2026-04-01T02:21:23.3414090Z [36;1msecurity set-keychain-settings -lut 21600 $KEYCHAIN_PATH[0m
+2026-04-01T02:21:23.3414670Z [36;1msecurity unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH[0m
+2026-04-01T02:21:23.3415100Z [36;1m[0m
+2026-04-01T02:21:23.3415630Z [36;1msecurity import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH[0m
+2026-04-01T02:21:23.3416430Z [36;1msecurity set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH[0m
+2026-04-01T02:21:23.3417100Z [36;1msecurity list-keychain -d user -s $KEYCHAIN_PATH[0m
+2026-04-01T02:21:23.3417480Z [36;1m[0m
+2026-04-01T02:21:23.3417830Z [36;1mmkdir -p ~/Library/MobileDevice/Provisioning\ Profiles[0m
+2026-04-01T02:21:23.3418330Z [36;1mcp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles[0m
+2026-04-01T02:21:23.3474030Z shell: /bin/bash -e {0}
+2026-04-01T02:21:23.3474340Z env:
+2026-04-01T02:21:23.3491200Z   BUILD_CERTIFICATE_BASE64: ***
+2026-04-01T02:21:23.3491550Z   P12_PASSWORD: ***
+2026-04-01T02:21:23.4235030Z   BUILD_PROVISION_PROFILE_BASE64: ***
+2026-04-01T02:21:23.4235490Z   KEYCHAIN_PASSWORD: ***
+2026-04-01T02:21:23.4235800Z ##[endgroup]
+2026-04-01T02:21:23.5597560Z 1 identity imported.
+2026-04-01T02:21:23.5692400Z keychain: "/Users/runner/work/_temp/app-signing.keychain-db"
+2026-04-01T02:21:23.5692940Z version: 256
+2026-04-01T02:21:23.5693260Z class: 0x00000010 
+2026-04-01T02:21:23.5693510Z attributes:
+2026-04-01T02:21:23.5693750Z     0x00000000 <uint32>=0x00000010 
+2026-04-01T02:21:23.5694100Z     0x00000001 <blob>=0x433530383037364300  "C508076C\000"
+2026-04-01T02:21:23.5694410Z     0x00000002 <blob>=<NULL>
+2026-04-01T02:21:23.5694730Z     0x00000003 <uint32>=0x00000001 
+2026-04-01T02:21:23.5695180Z     0x00000004 <uint32>=0x00000000 
+2026-04-01T02:21:23.5695610Z     0x00000005 <uint32>=0x00000000 
+2026-04-01T02:21:23.5696200Z     0x00000006 <blob>=0x15EA0FF7E70D16FA10A57715162D877B1A89B3E9  "\025\352\017\367\347\015\026\372\020\245w\025\026-\207{\032\211\263\351"
+2026-04-01T02:21:23.5814990Z     0x00000007 <blob>=<NULL>
+2026-04-01T02:21:23.5815660Z     0x00000008 <blob>=0x7B38373139316361322D306663392D313164342D383439612D3030303530326235323132327D00  "{87191ca2-0fc9-11d4-849a-000502b52122}\000"
+2026-04-01T02:21:23.5816260Z     0x00000009 <uint32>=0x0000002A  "\000\000\000*"
+2026-04-01T02:21:23.5816580Z     0x0000000A <uint32>=0x00000800 
+2026-04-01T02:21:23.5816920Z     0x0000000B <uint32>=0x00000800 
+2026-04-01T02:21:23.5817170Z     0x0000000C <blob>=0x0000000000000000 
+2026-04-01T02:21:23.5817460Z     0x0000000D <blob>=0x0000000000000000 
+2026-04-01T02:21:23.5817700Z     0x0000000E <uint32>=0x00000001 
+2026-04-01T02:21:23.5818020Z     0x0000000F <uint32>=0x00000001 
+2026-04-01T02:21:23.5818320Z     0x00000010 <uint32>=0x00000001 
+2026-04-01T02:21:23.5818670Z     0x00000011 <uint32>=0x00000000 
+2026-04-01T02:21:23.5818980Z     0x00000012 <uint32>=0x00000001 
+2026-04-01T02:21:23.5819280Z     0x00000013 <uint32>=0x00000001 
+2026-04-01T02:21:23.5819500Z     0x00000014 <uint32>=0x00000001 
+2026-04-01T02:21:23.5819760Z     0x00000015 <uint32>=0x00000001 
+2026-04-01T02:21:23.5820000Z     0x00000016 <uint32>=0x00000001 
+2026-04-01T02:21:23.5820230Z     0x00000017 <uint32>=0x00000001 
+2026-04-01T02:21:23.5821200Z     0x00000018 <uint32>=0x00000001 
+2026-04-01T02:21:23.5821510Z     0x00000019 <uint32>=0x00000001 
+2026-04-01T02:21:23.5821740Z     0x0000001A <uint32>=0x00000001 
+2026-04-01T02:21:23.5989900Z ##[group]Run xcodebuild -project ForwardText.xcodeproj \
+2026-04-01T02:21:23.5990370Z [36;1mxcodebuild -project ForwardText.xcodeproj \[0m
+2026-04-01T02:21:23.5990840Z [36;1m  -scheme ForwardText \[0m
+2026-04-01T02:21:23.5991200Z [36;1m  -archivePath $RUNNER_TEMP/ForwardText.xcarchive \[0m
+2026-04-01T02:21:23.5991550Z [36;1m  -sdk iphoneos \[0m
+2026-04-01T02:21:23.5991790Z [36;1m  -configuration Release \[0m
+2026-04-01T02:21:23.5992060Z [36;1m  -destination generic/platform=iOS \[0m
+2026-04-01T02:21:23.5992340Z [36;1m  clean archive \[0m
+2026-04-01T02:21:23.5992590Z [36;1m  CODE_SIGN_STYLE=Manual \[0m
+2026-04-01T02:21:23.5993070Z [36;1m  PROVISIONING_PROFILE_SPECIFIER="***" \[0m
+2026-04-01T02:21:23.5993400Z [36;1m  CODE_SIGN_IDENTITY="Apple Distribution" \[0m
+2026-04-01T02:21:23.5993710Z [36;1m  DEVELOPMENT_TEAM="***"[0m
+2026-04-01T02:21:23.6042760Z shell: /bin/bash -e {0}
+2026-04-01T02:21:23.6043000Z ##[endgroup]
+2026-04-01T02:21:24.3960440Z Command line invocation:
+2026-04-01T02:21:24.3962790Z     /Applications/Xcode_15.4.app/Contents/Developer/usr/bin/xcodebuild -project ForwardText.xcodeproj -scheme ForwardText -archivePath /Users/runner/work/_temp/ForwardText.xcarchive -sdk iphoneos -configuration Release -destination generic/platform=iOS clean archive CODE_SIGN_STYLE=Manual "PROVISIONING_PROFILE_SPECIFIER=***" "CODE_SIGN_IDENTITY=Apple Distribution" DEVELOPMENT_TEAM=***
+2026-04-01T02:21:24.3964010Z 
+2026-04-01T02:21:24.3964100Z User defaults from command line:
+2026-04-01T02:21:24.3964490Z     IDEArchivePathOverride = /Users/runner/work/_temp/ForwardText.xcarchive
+2026-04-01T02:21:24.3964880Z     IDEPackageSupportUseBuiltinSCM = YES
+2026-04-01T02:21:24.3965050Z 
+2026-04-01T02:21:24.3965140Z Build settings from command line:
+2026-04-01T02:21:24.3965390Z     CODE_SIGN_IDENTITY = Apple Distribution
+2026-04-01T02:21:24.3965620Z     CODE_SIGN_STYLE = Manual
+2026-04-01T02:21:24.3965850Z     DEVELOPMENT_TEAM = ***
+2026-04-01T02:21:24.3966180Z     PROVISIONING_PROFILE_SPECIFIER = ***
+2026-04-01T02:21:24.3966410Z     SDKROOT = iphoneos17.5
+2026-04-01T02:21:24.3966530Z 
+2026-04-01T02:21:25.4188650Z 2026-04-01 02:21:25.418 xcodebuild[6288:22329] Writing error result bundle to /var/folders/2j/q8gfr3px16xbk18lq5pql8g40000gn/T/ResultBundle_2026-01-04_02-21-0025.xcresult
+2026-04-01T02:21:26.7680610Z xcodebuild: error: Unable to read project 'ForwardText.xcodeproj'.
+2026-04-01T02:21:26.7693810Z 	Reason: The project ‘ForwardText’ cannot be opened because it is in a future Xcode project file format (77). Adjust the project format using a compatible version of Xcode to allow it to be opened by this version of Xcode.
+2026-04-01T02:21:26.7696530Z 
+2026-04-01T02:21:26.7696850Z 
+2026-04-01T02:21:26.7908720Z ##[error]Process completed with exit code 74.
+2026-04-01T02:21:26.8291320Z ##[group]Run actions/upload-artifact@v4
+2026-04-01T02:21:26.8291620Z with:
+2026-04-01T02:21:26.8291800Z   name: ForwardText.ipa
+2026-04-01T02:21:26.8292100Z   path: /Users/runner/work/_temp/export/ForwardText.ipa
+2026-04-01T02:21:26.8292450Z   if-no-files-found: warn
+2026-04-01T02:21:26.8293070Z   compression-level: 6
+2026-04-01T02:21:26.8293360Z   overwrite: false
+2026-04-01T02:21:26.8293610Z   include-hidden-files: false
+2026-04-01T02:21:26.8294350Z ##[endgroup]
+2026-04-01T02:21:27.7033080Z ##[warning]No files were found with the provided path: /Users/runner/work/_temp/export/ForwardText.ipa. No artifacts will be uploaded.
+2026-04-01T02:21:27.7314650Z Post job cleanup.
+2026-04-01T02:21:27.8491440Z [command]/opt/homebrew/bin/git version
+2026-04-01T02:21:27.8807520Z git version 2.53.0
+2026-04-01T02:21:27.8928240Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/389ed39d-610d-4d0e-990d-4f7fb5d74e1b/.gitconfig'
+2026-04-01T02:21:27.8929160Z Temporarily overriding HOME='/Users/runner/work/_temp/389ed39d-610d-4d0e-990d-4f7fb5d74e1b' before making global git config changes
+2026-04-01T02:21:27.8929900Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-01T02:21:27.8930860Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/ForwardText/ForwardText
+2026-04-01T02:21:27.8932850Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-04-01T02:21:27.8963670Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-04-01T02:21:27.9607350Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-01T02:21:27.9643670Z http.https://github.com/.extraheader
+2026-04-01T02:21:27.9653650Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-04-01T02:21:28.1021160Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-04-01T02:21:28.1686930Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-04-01T02:21:28.1800820Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-04-01T02:21:28.3109480Z Cleaning up orphan processes
+2026-04-01T02:21:28.9142380Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
