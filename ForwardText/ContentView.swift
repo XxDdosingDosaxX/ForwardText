@@ -43,6 +43,13 @@ struct ContentView: View {
                     }
 
                     HStack {
+                        let hasGmail = ForwardMessageHelper.shared.getKeychainValue(key: "refreshToken") != nil
+                        Image(systemName: hasGmail ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundStyle(hasGmail ? .green : .red)
+                        Text(hasGmail ? "Gmail connected" : "Gmail not connected")
+                    }
+
+                    HStack {
                         Image(systemName: isSetup ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .foregroundStyle(isSetup ? .green : .orange)
                         Text(isSetup ? "Shortcuts automation active" : "Set up Shortcuts automation")
