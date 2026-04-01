@@ -15,6 +15,12 @@ jobs:
     - name: Select Xcode
       run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
+    - name: Install XcodeGen
+      run: brew install xcodegen
+
+    - name: Generate Xcode project
+      run: xcodegen generate
+
     - name: Install certificate and provisioning profile
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
@@ -34,6 +40,7 @@ jobs:
         security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
         security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         security list-keychain -d user -s $KEYCHAIN_PATH
 
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
@@ -50,7 +57,8 @@ jobs:
           clean archive \
           CODE_SIGN_STYLE=Manual \
           PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_NAME }}" \
-          CODE_SIGN_IDENTITY="Apple Distribution"
+          CODE_SIGN_IDENTITY="Apple Distribution" \
+          DEVELOPMENT_TEAM="${{ secrets.TEAM_ID }}"
 
     - name: Export IPA
       run: |
@@ -67,6 +75,13 @@ jobs:
             <false/>
             <key>uploadSymbols</key>
             <true/>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+                <key>com.kothari.ForwardText</key>
+                <string>${{ secrets.PROVISIONING_PROFILE_NAME }}</string>
+            </dict>
         </dict>
         </plist>
         EOF
@@ -93,6 +108,7 @@ jobs:
 
     - name: Upload IPA artifact
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: ForwardText.ipa
         path: ${{ runner.temp }}/export/ForwardText.ipa

@@ -1,0 +1,26 @@
+name: ForwardText
+options:
+  bundleIdPrefix: com.kothari
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15.4"
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: 6PG65NU8X5
+    CODE_SIGN_STYLE: Manual
+
+targets:
+  ForwardText:
+    type: application
+    platform: iOS
+    sources:
+      - ForwardText
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kothari.ForwardText
+        INFOPLIST_FILE: ForwardText/Info.plist
+        CODE_SIGN_IDENTITY: "Apple Distribution"
+        PROVISIONING_PROFILE_SPECIFIER: "ForwardText App Store"
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1,2"
