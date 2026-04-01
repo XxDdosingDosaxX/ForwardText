@@ -1,5 +1,6 @@
 import AppIntents
 import Foundation
+import Contacts
 
 /// The Shortcuts action that forwards a message to email.
 /// This is what gets triggered by the Shortcuts automation when a message is received.
@@ -21,7 +22,15 @@ struct ForwardMessageIntent: AppIntent {
             return .result(dialog: "Please set up your email in the Forward Text app first.")
         }
 
-        let senderName = sender ?? "Unknown"
+        var senderName = sender ?? "Unknown"
+
+        // If sender looks like a phone number, try to find contact name
+        if senderName.contains("+") || senderName.allSatisfy({ $0.isNumber || $0 == "(" || $0 == ")" || $0 == "-" || $0 == " " || $0 == "+" }) {
+            if let contactName = lookupContact(phoneNumber: senderName) {
+                senderName = "\(contactName) (\(senderName))"
+            }
+        }
+
         let success = await withCheckedContinuation { continuation in
             ForwardMessageHelper.shared.forward(
                 message: messageContent,
@@ -37,6 +46,34 @@ struct ForwardMessageIntent: AppIntent {
         } else {
             return .result(dialog: "Failed to forward message")
         }
+    }
+
+    private func lookupContact(phoneNumber: String) -> String? {
+        let store = CNContactStore()
+        let digits = phoneNumber.filter { $0.isNumber }
+        guard digits.count >= 7 else { return nil }
+
+        let keysToFetch = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactPhoneNumbersKey] as [CNKeyDescriptor]
+        let request = CNContactFetchRequest(keysToFetch: keysToFetch)
+
+        var matchedName: String?
+        try? store.enumerateContacts(with: request) { contact, stop in
+            for phone in contact.phoneNumbers {
+                let contactDigits = phone.value.stringValue.filter { $0.isNumber }
+                // Match last 10 digits (ignoring country code differences)
+                let matchLength = min(10, min(digits.count, contactDigits.count))
+                if digits.suffix(matchLength) == contactDigits.suffix(matchLength) && matchLength >= 7 {
+                    let fullName = [contact.givenName, contact.familyName]
+                        .filter { !$0.isEmpty }
+                        .joined(separator: " ")
+                    if !fullName.isEmpty {
+                        matchedName = fullName
+                        stop.pointee = true
+                    }
+                }
+            }
+        }
+        return matchedName
     }
 }
 
