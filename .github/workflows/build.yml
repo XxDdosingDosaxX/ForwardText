@@ -37,9 +37,9 @@ jobs:
             static let gmailRefreshToken = "GMAIL_REFRESH_TOKEN_PLACEHOLDER"
         }
         SWIFTEOF
-        sed -i "s|GMAIL_CLIENT_ID_PLACEHOLDER|${GMAIL_CLIENT_ID}|g" ForwardText/Secrets.swift
-        sed -i "s|GMAIL_CLIENT_SECRET_PLACEHOLDER|${GMAIL_CLIENT_SECRET}|g" ForwardText/Secrets.swift
-        sed -i "s|GMAIL_REFRESH_TOKEN_PLACEHOLDER|${GMAIL_REFRESH_TOKEN}|g" ForwardText/Secrets.swift
+        sed -i '' "s|GMAIL_CLIENT_ID_PLACEHOLDER|${GMAIL_CLIENT_ID}|g" ForwardText/Secrets.swift
+        sed -i '' "s|GMAIL_CLIENT_SECRET_PLACEHOLDER|${GMAIL_CLIENT_SECRET}|g" ForwardText/Secrets.swift
+        sed -i '' "s|GMAIL_REFRESH_TOKEN_PLACEHOLDER|${GMAIL_REFRESH_TOKEN}|g" ForwardText/Secrets.swift
 
     - name: Generate Xcode project
       run: xcodegen generate
