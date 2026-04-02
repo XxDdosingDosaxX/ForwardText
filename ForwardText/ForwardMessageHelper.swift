@@ -84,18 +84,31 @@ class ForwardMessageHelper {
                 .replacingOccurrences(of: "/", with: "_")
                 .replacingOccurrences(of: "=", with: "")
 
-            let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send")!
+            // Use "insert" instead of "send" to avoid cluttering the Sent folder.
+            // The message goes directly into the mailbox with the "Forwarded Texts" label.
+            let labelId = "Label_5" // "Forwarded Texts" label
+            let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/import?internalDateSource=dateHeader")!
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-            let payload = ["raw": base64Email]
+            let payload: [String: Any] = [
+                "raw": base64Email,
+                "labelIds": [labelId]
+            ]
             request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
             URLSession.shared.dataTask(with: request) { data, response, error in
                 let httpResponse = response as? HTTPURLResponse
-                completion(httpResponse?.statusCode == 200)
+                let success = httpResponse?.statusCode == 200
+                if !success {
+                    // Log for debugging
+                    if let data = data, let body = String(data: data, encoding: .utf8) {
+                        print("ForwardText: Gmail import failed: \(httpResponse?.statusCode ?? 0) - \(body)")
+                    }
+                }
+                completion(success)
             }.resume()
         }
     }
