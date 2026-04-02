@@ -134,21 +134,16 @@ class ForwardMessageHelper {
         }.resume()
     }
 
-    /// Remove the SENT label from a message so it doesn't clutter the Sent folder.
-    /// The message stays in the mailbox under "Forwarded Texts" label (added by Gmail filter).
+    /// Permanently delete the forwarded message so it doesn't clutter Sent.
     private func deleteFromSent(messageId: String, accessToken: String) {
-        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(messageId)/modify")!
+        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(messageId)")!
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = "DELETE"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let payload: [String: Any] = ["removeLabelIds": ["SENT"]]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
         URLSession.shared.dataTask(with: request) { _, response, _ in
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            print("ForwardText: Remove SENT label: \(status == 200 ? "success" : "failed (\(status))")")
+            print("ForwardText: Delete sent message: \(status == 204 ? "success" : "failed (\(status))")")
         }.resume()
     }
 
