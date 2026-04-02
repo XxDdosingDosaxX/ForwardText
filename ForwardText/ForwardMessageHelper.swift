@@ -84,31 +84,27 @@ class ForwardMessageHelper {
                 .replacingOccurrences(of: "/", with: "_")
                 .replacingOccurrences(of: "=", with: "")
 
-            // Use "insert" instead of "send" to avoid cluttering the Sent folder.
-            // The message goes directly into the mailbox with the "Forwarded Texts" label.
-            let labelId = "Label_5" // "Forwarded Texts" label
-            let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/import?internalDateSource=dateHeader")!
+            let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send")!
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-            let payload: [String: Any] = [
-                "raw": base64Email,
-                "labelIds": [labelId]
-            ]
+            let payload = ["raw": base64Email]
             request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
             URLSession.shared.dataTask(with: request) { data, response, error in
                 let httpResponse = response as? HTTPURLResponse
-                let success = httpResponse?.statusCode == 200
-                if !success {
-                    // Log for debugging
-                    if let data = data, let body = String(data: data, encoding: .utf8) {
-                        print("ForwardText: Gmail import failed: \(httpResponse?.statusCode ?? 0) - \(body)")
-                    }
+                if httpResponse?.statusCode == 200,
+                   let data = data,
+                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let messageId = json["id"] as? String {
+                    // Delete from Sent folder so it doesn't clutter
+                    self.deleteFromSent(messageId: messageId, accessToken: token)
+                    completion(true)
+                } else {
+                    completion(false)
                 }
-                completion(success)
             }.resume()
         }
     }
@@ -135,6 +131,24 @@ class ForwardMessageHelper {
                 return
             }
             completion(accessToken)
+        }.resume()
+    }
+
+    /// Remove the SENT label from a message so it doesn't clutter the Sent folder.
+    /// The message stays in the mailbox under "Forwarded Texts" label (added by Gmail filter).
+    private func deleteFromSent(messageId: String, accessToken: String) {
+        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(messageId)/modify")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let payload: [String: Any] = ["removeLabelIds": ["SENT"]]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        URLSession.shared.dataTask(with: request) { _, response, _ in
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            print("ForwardText: Remove SENT label: \(status == 200 ? "success" : "failed (\(status))")")
         }.resume()
     }
 
