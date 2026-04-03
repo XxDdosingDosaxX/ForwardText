@@ -126,7 +126,10 @@ struct ContentView: View {
                     .padding(.bottom)
             }
             .navigationTitle("")
-            .onAppear { refreshStatus() }
+            .onAppear {
+                refreshStatus()
+                flushQueueIfNeeded()
+            }
             .sheet(isPresented: $showingSetupGuide) {
                 SetupGuideView(isSetup: $isSetup)
             }
@@ -144,6 +147,28 @@ struct ContentView: View {
             lastForwarded = formatter.localizedString(for: date, relativeTo: Date())
         } else {
             lastForwarded = "Never"
+        }
+    }
+
+    func flushQueueIfNeeded() {
+        guard MessageQueue.shared.count > 0, forwardEmail.contains("@") else { return }
+
+        let messages = MessageQueue.shared.dequeueAll()
+        guard !messages.isEmpty else { return }
+
+        ForwardMessageHelper.shared.forwardBatch(messages: messages, to: forwardEmail) { success, error in
+            if !success {
+                // Requeue failed messages
+                let failed = messages.map { msg -> QueuedMessage in
+                    var m = msg
+                    m.retryCount += 1
+                    m.lastError = error
+                    return m
+                }
+                MessageQueue.shared.requeueFailed(failed.filter { $0.retryCount < 10 })
+                MessageQueue.shared.logEvent(.failed, detail: "App-open flush failed: \(error)")
+            }
+            DispatchQueue.main.async { refreshStatus() }
         }
     }
 

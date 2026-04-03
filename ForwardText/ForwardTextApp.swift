@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct ForwardTextApp: App {
@@ -10,6 +11,9 @@ struct ForwardTextApp: App {
             helper.setKeychainValue(key: "clientSecret", value: Secrets.gmailClientSecret)
             helper.setKeychainValue(key: "refreshToken", value: Secrets.gmailRefreshToken)
         }
+
+        // Request notification permission for queue alerts
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
     var body: some Scene {

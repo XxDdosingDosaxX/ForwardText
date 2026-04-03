@@ -1,6 +1,7 @@
 import AppIntents
 import Foundation
 import Contacts
+import UserNotifications
 
 /// The Shortcuts action that forwards a message to email.
 /// Queues the message locally first (instant, never fails), then attempts to flush
@@ -78,6 +79,17 @@ struct ForwardMessageIntent: AppIntent {
             let retriable = failed.filter { $0.retryCount < 10 }
             MessageQueue.shared.requeueFailed(retriable)
             MessageQueue.shared.logEvent(.failed, detail: "Flush failed: \(result.1). Requeued \(retriable.count)")
+
+            // Notify user if queue is stuck (3+ consecutive failures on any message)
+            if let maxRetries = retriable.map({ $0.retryCount }).max(), maxRetries >= 3 {
+                let content = UNMutableNotificationContent()
+                content.title = "Forward Text: \(retriable.count) texts stuck"
+                content.body = "Messages failing to send. Open app to check."
+                content.sound = .default
+                let request = UNNotificationRequest(identifier: "queue-stuck", content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(request)
+            }
+
             return .result(dialog: "Queued (send failed, will retry)")
         }
     }
