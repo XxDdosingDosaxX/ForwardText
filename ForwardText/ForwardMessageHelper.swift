@@ -182,19 +182,15 @@ class ForwardMessageHelper {
         }.resume()
     }
 
-    /// Remove message from INBOX and SENT so it doesn't clutter.
-    /// Uses Gmail modify to strip labels — message still exists under All Mail
-    /// so the morning digest can find it via search.
+    /// Trash the forwarded message so it doesn't show in Sent or Inbox.
+    /// Gmail doesn't allow removing the SENT label via API, so we trash instead.
+    /// The morning digest finds them with includeSpamTrash, then permanently deletes after reading.
     private func archiveAndClean(messageId: String, accessToken: String) {
-        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(messageId)/modify")!
+        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(messageId)/trash")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 10
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let payload: [String: Any] = ["removeLabelIds": ["INBOX", "SENT"]]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
         URLSession.shared.dataTask(with: request) { _, _, _ in
             // Fire and forget — don't block on this
