@@ -4,7 +4,10 @@ struct ContentView: View {
     @AppStorage("forwardEmail") private var forwardEmail: String = ""
     @AppStorage("isSetup") private var isSetup: Bool = false
     @State private var showingSetupGuide = false
+    @State private var showingLogs = false
     @State private var testStatus: String = ""
+    @State private var queueCount: Int = 0
+    @State private var lastForwarded: String = "Never"
 
     var body: some View {
         NavigationStack {
@@ -54,31 +57,57 @@ struct ContentView: View {
                             .foregroundStyle(isSetup ? .green : .orange)
                         Text(isSetup ? "Shortcuts automation active" : "Set up Shortcuts automation")
                     }
+
+                    Divider()
+
+                    // Queue status
+                    HStack {
+                        Image(systemName: queueCount > 0 ? "tray.full.fill" : "tray.fill")
+                            .foregroundStyle(queueCount > 0 ? .orange : .green)
+                        Text(queueCount > 0 ? "\(queueCount) messages pending" : "Queue empty")
+                    }
+
+                    HStack {
+                        Image(systemName: "clock")
+                            .foregroundStyle(.secondary)
+                        Text("Last sent: \(lastForwarded)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .padding()
                 .background(Color(.systemGray6))
                 .cornerRadius(12)
                 .padding(.horizontal)
 
-                // Setup button
-                Button(action: { showingSetupGuide = true }) {
-                    Label("Setup Shortcuts Automation", systemImage: "gear")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal)
+                // Buttons
+                VStack(spacing: 12) {
+                    Button(action: { showingSetupGuide = true }) {
+                        Label("Setup Shortcuts Automation", systemImage: "gear")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
 
-                // Test button
-                Button(action: sendTestMessage) {
-                    Label("Send Test Email", systemImage: "paperplane")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                    Button(action: sendTestMessage) {
+                        Label("Send Test Email", systemImage: "paperplane")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+
+                    Button(action: { showingLogs = true }) {
+                        Label("View Logs", systemImage: "doc.text.magnifyingglass")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray5))
+                            .foregroundColor(.primary)
+                            .cornerRadius(12)
+                    }
                 }
                 .padding(.horizontal)
 
@@ -90,7 +119,6 @@ struct ContentView: View {
 
                 Spacer()
 
-                // Footer
                 Text("Messages are forwarded directly from your device.\nNo data passes through external servers.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -98,9 +126,24 @@ struct ContentView: View {
                     .padding(.bottom)
             }
             .navigationTitle("")
+            .onAppear { refreshStatus() }
             .sheet(isPresented: $showingSetupGuide) {
                 SetupGuideView(isSetup: $isSetup)
             }
+            .sheet(isPresented: $showingLogs) {
+                LogsView()
+            }
+        }
+    }
+
+    func refreshStatus() {
+        queueCount = MessageQueue.shared.count
+        if let date = MessageQueue.shared.lastSuccessfulForward() {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .abbreviated
+            lastForwarded = formatter.localizedString(for: date, relativeTo: Date())
+        } else {
+            lastForwarded = "Never"
         }
     }
 
@@ -110,17 +153,76 @@ struct ContentView: View {
             return
         }
 
+        testStatus = "Sending..."
         ForwardMessageHelper.shared.forward(
             message: "This is a test from Forward Text app. If you received this, the forwarding is working!",
             sender: "Test",
             to: forwardEmail
         ) { success in
             DispatchQueue.main.async {
-                testStatus = success ? "Test email sent!" : "Failed to send. Check your connection."
+                testStatus = success ? "Test email sent!" : "Failed to send. Check logs for details."
+                refreshStatus()
             }
         }
     }
 }
+
+// MARK: - Logs View
+
+struct LogsView: View {
+    @State private var logs: [MessageQueue.LogEntry] = []
+
+    var body: some View {
+        NavigationStack {
+            List(logs.reversed(), id: \.timestamp) { log in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Circle()
+                            .fill(colorForEvent(log.event))
+                            .frame(width: 8, height: 8)
+                        Text(log.event.rawValue.uppercased())
+                            .font(.caption2.bold())
+                            .foregroundStyle(colorForEvent(log.event))
+                        Spacer()
+                        Text(formatTime(log.timestamp))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let sender = log.sender {
+                        Text(sender)
+                            .font(.caption.bold())
+                    }
+                    Text(log.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                }
+                .padding(.vertical, 2)
+            }
+            .navigationTitle("Forwarding Logs")
+            .onAppear {
+                logs = MessageQueue.shared.recentLogs(limit: 50)
+            }
+        }
+    }
+
+    func colorForEvent(_ event: MessageQueue.EventType) -> Color {
+        switch event {
+        case .queued: return .blue
+        case .sent, .tokenRefreshSuccess, .flushCompleted: return .green
+        case .failed, .tokenRefreshFailed, .networkError: return .red
+        case .retrying, .flushStarted: return .orange
+        }
+    }
+
+    func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d h:mm:ss a"
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - Setup Guide
 
 struct SetupGuideView: View {
     @Binding var isSetup: Bool
@@ -130,19 +232,32 @@ struct SetupGuideView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Setup Shortcuts Automation")
+                    Text("Setup Guide")
                         .font(.title2.bold())
 
-                    StepView(number: 1, text: "Open the Shortcuts app on your iPhone")
-                    StepView(number: 2, text: "Tap the Automation tab at the bottom")
-                    StepView(number: 3, text: "Tap + to create a New Automation")
-                    StepView(number: 4, text: "Select Message as the trigger")
-                    StepView(number: 5, text: "Set 'Message Contains' to a blank space (forwards all messages) or leave empty")
-                    StepView(number: 6, text: "Turn on 'Run Immediately'")
-                    StepView(number: 7, text: "Tap Next, then search for 'Forward Text'")
-                    StepView(number: 8, text: "Select 'Forward Message' action")
-                    StepView(number: 9, text: "Tap on the Message field and select 'Shortcut Input' from the toolbar")
-                    StepView(number: 10, text: "Tap Done — you're all set!")
+                    Text("Step 1: Message Automation")
+                        .font(.headline)
+                    StepView(number: 1, text: "Open Shortcuts app → Automation tab")
+                    StepView(number: 2, text: "Create automation: When I Receive a Message")
+                    StepView(number: 3, text: "Turn on 'Run Immediately'")
+                    StepView(number: 4, text: "Add action: Forward Text → 'Forward Message'")
+                    StepView(number: 5, text: "Set Message Content to 'Shortcut Input'")
+
+                    Divider()
+
+                    Text("Step 2: Flush Timer (Shortcut Plus)")
+                        .font(.headline)
+                    StepView(number: 6, text: "In Shortcut Plus, create a recurring timer (every 5 min)")
+                    StepView(number: 7, text: "Set it to run: Forward Text → 'Send Queued Messages'")
+                    StepView(number: 8, text: "This sends any queued texts to your email in batches")
+
+                    Divider()
+
+                    Text("How It Works")
+                        .font(.headline)
+                    Text("Each incoming text is instantly saved to a local queue (no network needed). Every 5 minutes, the flush action sends all queued messages in one email. This prevents iOS from throttling the automation.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
                     Button(action: {
                         isSetup = true

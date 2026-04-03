@@ -1,180 +1,182 @@
 import Foundation
 
-/// Handles forwarding messages to email via a simple HTTPS webhook or SMTP relay.
-/// Uses a free email sending service (EmailJS or a simple Cloudflare Worker).
-/// For simplicity, we'll use a direct Gmail API approach via a pre-authenticated token,
-/// or fall back to a mailto: URL scheme.
-///
-/// The simplest approach that works without a server: use MFMailComposeViewController
-/// in the background isn't possible (requires UI). Instead, we'll use a lightweight
-/// HTTP endpoint or the Gmail SMTP directly.
-///
-/// APPROACH: Use a simple HTTPS POST to a free webhook service (like Make.com/Zapier free tier)
-/// OR use the Gmail API directly with a stored refresh token.
-///
-/// For THIS app, we'll use the Gmail API with OAuth tokens stored in Keychain.
 class ForwardMessageHelper {
     static let shared = ForwardMessageHelper()
 
     private let keychainService = "com.forwardtext.gmail"
 
+    // Cached access token to avoid refreshing on every call
+    private var cachedAccessToken: String?
+    private var tokenExpiry: Date?
+
+    // MARK: - Single Message (for test button in UI)
+
     func forward(message: String, sender: String, to email: String, completion: @escaping (Bool) -> Void) {
-        // Try Gmail API first, fall back to webhook
-        if let refreshToken = getKeychainValue(key: "refreshToken"),
-           let clientId = getKeychainValue(key: "clientId"),
-           let clientSecret = getKeychainValue(key: "clientSecret") {
-            sendViaGmailAPI(
-                message: message,
-                sender: sender,
-                to: email,
-                refreshToken: refreshToken,
-                clientId: clientId,
-                clientSecret: clientSecret,
-                completion: completion
-            )
-        } else {
-            // Fallback: use a simple webhook POST
-            sendViaWebhook(message: message, sender: sender, to: email, completion: completion)
+        let messages = [QueuedMessage(sender: sender, message: message)]
+        forwardBatch(messages: messages, to: email) { success, _ in
+            completion(success)
         }
     }
 
-    // MARK: - Gmail API Method
+    // MARK: - Batch Send
 
-    private func sendViaGmailAPI(
-        message: String,
-        sender: String,
-        to email: String,
-        refreshToken: String,
-        clientId: String,
-        clientSecret: String,
-        completion: @escaping (Bool) -> Void
-    ) {
-        // Step 1: Refresh the access token
-        refreshAccessToken(refreshToken: refreshToken, clientId: clientId, clientSecret: clientSecret) { accessToken in
-            guard let token = accessToken else {
-                completion(false)
+    func forwardBatch(messages: [QueuedMessage], to email: String, completion: @escaping (Bool, String) -> Void) {
+        guard let refreshToken = getKeychainValue(key: "refreshToken"),
+              let clientId = getKeychainValue(key: "clientId"),
+              let clientSecret = getKeychainValue(key: "clientSecret") else {
+            let error = "Gmail credentials not found in Keychain"
+            MessageQueue.shared.logEvent(.failed, detail: error)
+            completion(false, error)
+            return
+        }
+
+        getValidAccessToken(refreshToken: refreshToken, clientId: clientId, clientSecret: clientSecret) { token, error in
+            guard let token = token else {
+                let errorMsg = error ?? "Unknown token error"
+                MessageQueue.shared.logEvent(.tokenRefreshFailed, detail: errorMsg)
+                completion(false, errorMsg)
                 return
             }
 
-            // Step 2: Send the email
-            let timestamp = Self.formattedDate()
-            let subject = "Forwarded Text from \(sender) — \(timestamp)"
-            let body = """
-            From: \(sender)
-            Time: \(timestamp)
+            MessageQueue.shared.logEvent(.tokenRefreshSuccess, detail: "Token ready")
 
-            \(message)
+            // Build one email with all messages
+            let subject: String
+            let body: String
 
-            ---
-            Forwarded by Forward Text app
-            """
+            if messages.count == 1 {
+                let msg = messages[0]
+                let timestamp = Self.formattedDate(msg.timestamp)
+                subject = "Forwarded Text from \(msg.sender) \u{2014} \(timestamp)"
+                body = """
+                From: \(msg.sender)
+                Time: \(timestamp)
 
-            let rawEmail = """
-            From: \(email)
-            To: \(email)
-            Subject: \(subject)
-            Content-Type: text/plain; charset=utf-8
+                \(msg.message)
 
-            \(body)
-            """
+                ---
+                Forwarded by Forward Text app
+                """
+            } else {
+                subject = "Forwarded Texts (\(messages.count) messages) \u{2014} \(Self.formattedDate())"
+                var parts: [String] = []
+                for msg in messages.sorted(by: { $0.timestamp < $1.timestamp }) {
+                    let timestamp = Self.formattedDate(msg.timestamp)
+                    parts.append("""
+                    From: \(msg.sender)
+                    Time: \(timestamp)
 
-            let base64Email = rawEmail.data(using: .utf8)!
-                .base64EncodedString()
-                .replacingOccurrences(of: "+", with: "-")
-                .replacingOccurrences(of: "/", with: "_")
-                .replacingOccurrences(of: "=", with: "")
-
-            let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send")!
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-            let payload = ["raw": base64Email]
-            request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                let httpResponse = response as? HTTPURLResponse
-                if httpResponse?.statusCode == 200,
-                   let data = data,
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let messageId = json["id"] as? String {
-                    // Delete from Sent folder so it doesn't clutter
-                    self.deleteFromSent(messageId: messageId, accessToken: token)
-                    completion(true)
-                } else {
-                    completion(false)
+                    \(msg.message)
+                    """)
                 }
-            }.resume()
+                body = parts.joined(separator: "\n\n---\n\n") + "\n\n---\nForwarded by Forward Text app"
+            }
+
+            self.sendEmail(to: email, subject: subject, body: body, accessToken: token, completion: completion)
         }
     }
 
-    private func refreshAccessToken(
-        refreshToken: String,
-        clientId: String,
-        clientSecret: String,
-        completion: @escaping (String?) -> Void
-    ) {
+    // MARK: - Token Management
+
+    private func getValidAccessToken(refreshToken: String, clientId: String, clientSecret: String, completion: @escaping (String?, String?) -> Void) {
+        // Use cached token if still valid (with 60s buffer)
+        if let cached = cachedAccessToken, let expiry = tokenExpiry, Date() < expiry.addingTimeInterval(-60) {
+            completion(cached, nil)
+            return
+        }
+
         let url = URL(string: "https://oauth2.googleapis.com/token")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = 15
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         let body = "client_id=\(clientId)&client_secret=\(clientSecret)&refresh_token=\(refreshToken)&grant_type=refresh_token"
         request.httpBody = body.data(using: .utf8)
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let accessToken = json["access_token"] as? String else {
-                completion(nil)
+            if let error = error {
+                completion(nil, "Network error refreshing token: \(error.localizedDescription)")
                 return
             }
-            completion(accessToken)
+
+            let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+            guard let data = data else {
+                completion(nil, "No data from token endpoint (HTTP \(httpStatus))")
+                return
+            }
+
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                let raw = String(data: data, encoding: .utf8) ?? "unreadable"
+                completion(nil, "Invalid JSON from token endpoint (HTTP \(httpStatus)): \(raw.prefix(200))")
+                return
+            }
+
+            if let accessToken = json["access_token"] as? String {
+                // Cache token — Google tokens last 3600s by default
+                let expiresIn = json["expires_in"] as? Int ?? 3600
+                self.cachedAccessToken = accessToken
+                self.tokenExpiry = Date().addingTimeInterval(TimeInterval(expiresIn))
+                completion(accessToken, nil)
+            } else if let errorDesc = json["error_description"] as? String {
+                completion(nil, "OAuth error: \(json["error"] ?? "unknown") — \(errorDesc)")
+            } else {
+                completion(nil, "Token response missing access_token (HTTP \(httpStatus)): \(json)")
+            }
         }.resume()
     }
 
-    /// Permanently delete the forwarded message so it doesn't clutter Sent.
-    private func deleteFromSent(messageId: String, accessToken: String) {
-        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(messageId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    // MARK: - Gmail API Send
 
-        URLSession.shared.dataTask(with: request) { _, response, _ in
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            print("ForwardText: Delete sent message: \(status == 204 ? "success" : "failed (\(status))")")
-        }.resume()
-    }
+    private func sendEmail(to email: String, subject: String, body: String, accessToken: String, completion: @escaping (Bool, String) -> Void) {
+        let rawEmail = """
+        From: \(email)
+        To: \(email)
+        Subject: \(subject)
+        Content-Type: text/plain; charset=utf-8
 
-    // MARK: - Webhook Fallback
+        \(body)
+        """
 
-    private func sendViaWebhook(message: String, sender: String, to email: String, completion: @escaping (Bool) -> Void) {
-        // If no Gmail API credentials, try a webhook URL stored in UserDefaults
-        guard let webhookURL = UserDefaults.standard.string(forKey: "webhookURL"),
-              let url = URL(string: webhookURL) else {
-            // Last resort: just log it
-            print("ForwardText: No forwarding method configured. Message from \(sender): \(message)")
-            completion(false)
-            return
-        }
+        let base64Email = rawEmail.data(using: .utf8)!
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
 
+        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = 20
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let payload: [String: String] = [
-            "message": message,
-            "sender": sender,
-            "email": email,
-            "timestamp": Self.formattedDate()
-        ]
-
+        let payload = ["raw": base64Email]
         request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            let httpResponse = response as? HTTPURLResponse
-            completion(httpResponse?.statusCode == 200)
+            if let error = error {
+                let msg = "Network error sending email: \(error.localizedDescription)"
+                MessageQueue.shared.logEvent(.networkError, detail: msg)
+                completion(false, msg)
+                return
+            }
+
+            let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+            if httpStatus == 200,
+               let data = data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let _ = json["id"] as? String {
+                MessageQueue.shared.logEvent(.sent, detail: "Email sent (HTTP 200)")
+                completion(true, "")
+            } else {
+                let responseBody = data.flatMap { String(data: $0, encoding: .utf8) } ?? "no body"
+                let msg = "Gmail API error (HTTP \(httpStatus)): \(responseBody.prefix(300))"
+                MessageQueue.shared.logEvent(.failed, detail: msg)
+                completion(false, msg)
+            }
         }.resume()
     }
 
@@ -189,7 +191,7 @@ class ForwardMessageHelper {
             kSecValueData as String: data
         ]
 
-        SecItemDelete(query as CFDictionary) // Remove old value
+        SecItemDelete(query as CFDictionary)
         SecItemAdd(query as CFDictionary, nil)
     }
 
@@ -214,9 +216,9 @@ class ForwardMessageHelper {
 
     // MARK: - Helpers
 
-    static func formattedDate() -> String {
+    static func formattedDate(_ date: Date = Date()) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy h:mm a"
-        return formatter.string(from: Date())
+        return formatter.string(from: date)
     }
 }
