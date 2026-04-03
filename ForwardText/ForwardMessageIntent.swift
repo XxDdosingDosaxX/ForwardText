@@ -87,7 +87,7 @@ struct ForwardMessageIntent: AppIntent {
                 content.body = "Messages failing to send. Open app to check."
                 content.sound = .default
                 let request = UNNotificationRequest(identifier: "queue-stuck", content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(request)
+                UNUserNotificationCenter.current().add(request) { _ in }
             }
 
             return .result(dialog: "Queued (send failed, will retry)")
