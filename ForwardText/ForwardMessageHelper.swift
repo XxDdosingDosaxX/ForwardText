@@ -168,7 +168,9 @@ class ForwardMessageHelper {
             if httpStatus == 200,
                let data = data,
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let _ = json["id"] as? String {
+               let messageId = json["id"] as? String {
+                // Remove from inbox and sent so it doesn't clutter
+                self.archiveAndClean(messageId: messageId, accessToken: accessToken)
                 MessageQueue.shared.logEvent(.sent, detail: "Email sent (HTTP 200)")
                 completion(true, "")
             } else {
@@ -177,6 +179,25 @@ class ForwardMessageHelper {
                 MessageQueue.shared.logEvent(.failed, detail: msg)
                 completion(false, msg)
             }
+        }.resume()
+    }
+
+    /// Remove message from INBOX and SENT so it doesn't clutter.
+    /// Uses Gmail modify to strip labels — message still exists under All Mail
+    /// so the morning digest can find it via search.
+    private func archiveAndClean(messageId: String, accessToken: String) {
+        let url = URL(string: "https://gmail.googleapis.com/gmail/v1/users/me/messages/\(messageId)/modify")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 10
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let payload: [String: Any] = ["removeLabelIds": ["INBOX", "SENT"]]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        URLSession.shared.dataTask(with: request) { _, _, _ in
+            // Fire and forget — don't block on this
         }.resume()
     }
 
