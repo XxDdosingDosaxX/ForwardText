@@ -9,6 +9,16 @@ class ForwardMessageHelper {
     private var cachedAccessToken: String?
     private var tokenExpiry: Date?
 
+    /// Re-populate keychain from build-time Secrets if missing.
+    /// This self-heals after iOS clears keychain (updates, storage pressure, etc.)
+    func ensureCredentials() {
+        if getKeychainValue(key: "refreshToken") == nil && !Secrets.gmailRefreshToken.isEmpty {
+            setKeychainValue(key: "clientId", value: Secrets.gmailClientId)
+            setKeychainValue(key: "clientSecret", value: Secrets.gmailClientSecret)
+            setKeychainValue(key: "refreshToken", value: Secrets.gmailRefreshToken)
+        }
+    }
+
     // MARK: - Single Message (for test button in UI)
 
     func forward(message: String, sender: String, to email: String, completion: @escaping (Bool) -> Void) {
@@ -21,6 +31,7 @@ class ForwardMessageHelper {
     // MARK: - Batch Send
 
     func forwardBatch(messages: [QueuedMessage], to email: String, completion: @escaping (Bool, String) -> Void) {
+        ensureCredentials()
         guard let refreshToken = getKeychainValue(key: "refreshToken"),
               let clientId = getKeychainValue(key: "clientId"),
               let clientSecret = getKeychainValue(key: "clientSecret") else {
