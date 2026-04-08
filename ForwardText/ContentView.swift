@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 struct ContentView: View {
     @AppStorage("forwardEmail") private var forwardEmail: String = ""
@@ -8,6 +9,13 @@ struct ContentView: View {
     @State private var testStatus: String = ""
     @State private var queueCount: Int = 0
     @State private var lastForwarded: String = "Never"
+    @State private var isReauthenticating = false
+    @State private var authStatus: AuthStatus = .unknown
+    @State private var showingReauth = false
+
+    enum AuthStatus {
+        case unknown, valid, expired, checking
+    }
 
     var body: some View {
         NavigationStack {
@@ -46,10 +54,40 @@ struct ContentView: View {
                     }
 
                     HStack {
-                        let hasGmail = ForwardMessageHelper.shared.getKeychainValue(key: "refreshToken") != nil
-                        Image(systemName: hasGmail ? "checkmark.circle.fill" : "xmark.circle.fill")
-                            .foregroundStyle(hasGmail ? .green : .red)
-                        Text(hasGmail ? "Gmail connected" : "Gmail not connected")
+                        switch authStatus {
+                        case .checking:
+                            ProgressView()
+                                .scaleEffect(0.7)
+                            Text("Checking Gmail connection...")
+                                .foregroundStyle(.secondary)
+                        case .valid:
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                            Text("Gmail connected & token valid")
+                        case .expired:
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                            Text("Gmail token expired")
+                                .foregroundStyle(.red)
+                        case .unknown:
+                            let hasGmail = ForwardMessageHelper.shared.getKeychainValue(key: "refreshToken") != nil
+                            Image(systemName: hasGmail ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundStyle(hasGmail ? .green : .red)
+                            Text(hasGmail ? "Gmail connected" : "Gmail not connected")
+                        }
+                    }
+
+                    // Show re-auth button when token is expired
+                    if authStatus == .expired {
+                        Button(action: { showingReauth = true }) {
+                            Label("Re-authenticate Gmail", systemImage: "arrow.triangle.2.circlepath")
+                                .font(.caption.bold())
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.red.opacity(0.15))
+                                .foregroundColor(.red)
+                                .cornerRadius(8)
+                        }
                     }
 
                     HStack {
@@ -100,13 +138,24 @@ struct ContentView: View {
                             .cornerRadius(12)
                     }
 
-                    Button(action: { showingLogs = true }) {
-                        Label("View Logs", systemImage: "doc.text.magnifyingglass")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color(.systemGray5))
-                            .foregroundColor(.primary)
-                            .cornerRadius(12)
+                    HStack(spacing: 12) {
+                        Button(action: { showingReauth = true }) {
+                            Label("Re-auth Gmail", systemImage: "arrow.triangle.2.circlepath")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.orange)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+
+                        Button(action: { showingLogs = true }) {
+                            Label("Logs", systemImage: "doc.text.magnifyingglass")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(.systemGray5))
+                                .foregroundColor(.primary)
+                                .cornerRadius(12)
+                        }
                     }
                 }
                 .padding(.horizontal)
@@ -114,7 +163,8 @@ struct ContentView: View {
                 if !testStatus.isEmpty {
                     Text(testStatus)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(testStatus.contains("sent") ? .green : .secondary)
+                        .padding(.horizontal)
                 }
 
                 Spacer()
@@ -128,6 +178,7 @@ struct ContentView: View {
             .navigationTitle("")
             .onAppear {
                 refreshStatus()
+                validateToken()
                 flushQueueIfNeeded()
             }
             .sheet(isPresented: $showingSetupGuide) {
@@ -135,6 +186,18 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingLogs) {
                 LogsView()
+            }
+            .sheet(isPresented: $showingReauth) {
+                OAuthReauthView(authStatus: $authStatus)
+            }
+        }
+    }
+
+    func validateToken() {
+        authStatus = .checking
+        ForwardMessageHelper.shared.validateTokenOnLaunch { success, error in
+            DispatchQueue.main.async {
+                authStatus = success ? .valid : .expired
             }
         }
     }
@@ -168,7 +231,13 @@ struct ContentView: View {
                 MessageQueue.shared.requeueFailed(failed.filter { $0.retryCount < 10 })
                 MessageQueue.shared.logEvent(.failed, detail: "App-open flush failed: \(error)")
             }
-            DispatchQueue.main.async { refreshStatus() }
+            DispatchQueue.main.async {
+                refreshStatus()
+                // Re-check auth status if flush failed due to auth
+                if !success && (error.contains("invalid_grant") || error.contains("expired")) {
+                    authStatus = .expired
+                }
+            }
         }
     }
 
@@ -187,8 +256,158 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 testStatus = success ? "Test email sent!" : "Failed to send. Check logs for details."
                 refreshStatus()
+                if success {
+                    authStatus = .valid
+                }
             }
         }
+    }
+}
+
+// MARK: - OAuth Re-authentication View
+
+struct OAuthReauthView: View {
+    @Binding var authStatus: ContentView.AuthStatus
+    @Environment(\.dismiss) var dismiss
+    @State private var status: String = ""
+    @State private var isLoading = false
+
+    // Use a custom URI scheme for the OAuth redirect
+    private let redirectURI = "com.kothari.forwardtext:/oauth2callback"
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Image(systemName: "lock.rotation")
+                    .font(.system(size: 50))
+                    .foregroundStyle(.orange)
+
+                Text("Re-authenticate Gmail")
+                    .font(.title2.bold())
+
+                Text("Your Gmail token has expired. This happens when Google's OAuth app is in testing mode (tokens last 7 days). Tap below to sign in again and get a fresh token.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                VStack(spacing: 8) {
+                    Text("Why does this keep happening?")
+                        .font(.headline)
+                    Text("Google OAuth apps in 'Testing' mode expire refresh tokens after 7 days. To fix permanently, the Google Cloud project must be published to 'Production' status (requires verification). Until then, re-authenticate here when it expires.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal)
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal)
+
+                if isLoading {
+                    ProgressView("Authenticating...")
+                } else {
+                    Button(action: startOAuth) {
+                        Label("Sign in with Google", systemImage: "person.badge.key")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+                }
+
+                if !status.isEmpty {
+                    Text(status)
+                        .font(.caption)
+                        .foregroundStyle(status.contains("Success") ? .green : .red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+
+                Spacer()
+            }
+            .padding(.top, 32)
+            .navigationTitle("Re-authenticate")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    func startOAuth() {
+        guard let authURL = ForwardMessageHelper.shared.buildAuthURL(redirectURI: redirectURI) else {
+            status = "Error: No client ID available. Rebuild the app."
+            return
+        }
+
+        isLoading = true
+        status = ""
+
+        // Use ASWebAuthenticationSession for secure in-app OAuth
+        let session = ASWebAuthenticationSession(
+            url: authURL,
+            callbackURLScheme: "com.kothari.forwardtext"
+        ) { callbackURL, error in
+            DispatchQueue.main.async {
+                isLoading = false
+
+                if let error = error {
+                    if (error as NSError).code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
+                        status = "Sign-in cancelled"
+                    } else {
+                        status = "Auth error: \(error.localizedDescription)"
+                    }
+                    return
+                }
+
+                guard let callbackURL = callbackURL,
+                      let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+                      let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+                    status = "Error: No authorization code received"
+                    return
+                }
+
+                // Exchange code for tokens
+                isLoading = true
+                ForwardMessageHelper.shared.exchangeCodeForTokens(code: code, redirectURI: redirectURI) { success, error in
+                    DispatchQueue.main.async {
+                        isLoading = false
+                        if success {
+                            status = "Success! Gmail re-authenticated."
+                            authStatus = .valid
+                            MessageQueue.shared.logEvent(.tokenRefreshSuccess, detail: "User re-authenticated via in-app OAuth")
+                            // Auto-dismiss after brief delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                dismiss()
+                            }
+                        } else {
+                            status = "Failed: \(error ?? "Unknown error")"
+                        }
+                    }
+                }
+            }
+        }
+
+        session.prefersEphemeralWebBrowserSession = false // Allow existing Google session
+        session.presentationContextProvider = OAuthPresentationContext.shared
+        session.start()
+    }
+}
+
+// ASWebAuthenticationSession needs a presentation context
+class OAuthPresentationContext: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = OAuthPresentationContext()
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first else {
+            return ASPresentationAnchor()
+        }
+        return window
     }
 }
 
@@ -262,10 +481,10 @@ struct SetupGuideView: View {
 
                     Text("Step 1: Message Automation")
                         .font(.headline)
-                    StepView(number: 1, text: "Open Shortcuts app → Automation tab")
+                    StepView(number: 1, text: "Open Shortcuts app \u{2192} Automation tab")
                     StepView(number: 2, text: "Create automation: When I Receive a Message")
                     StepView(number: 3, text: "Turn on 'Run Immediately'")
-                    StepView(number: 4, text: "Add action: Forward Text → 'Forward Message'")
+                    StepView(number: 4, text: "Add action: Forward Text \u{2192} 'Forward Message'")
                     StepView(number: 5, text: "Set Message Content to 'Shortcut Input'")
 
                     Divider()
@@ -273,7 +492,7 @@ struct SetupGuideView: View {
                     Text("Step 2: Flush Timer (Shortcut Plus)")
                         .font(.headline)
                     StepView(number: 6, text: "In Shortcut Plus, create a recurring timer (every 5 min)")
-                    StepView(number: 7, text: "Set it to run: Forward Text → 'Send Queued Messages'")
+                    StepView(number: 7, text: "Set it to run: Forward Text \u{2192} 'Send Queued Messages'")
                     StepView(number: 8, text: "This sends any queued texts to your email in batches")
 
                     Divider()

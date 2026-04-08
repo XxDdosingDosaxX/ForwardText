@@ -12,8 +12,15 @@ struct ForwardTextApp: App {
             helper.setKeychainValue(key: "refreshToken", value: Secrets.gmailRefreshToken)
         }
 
-        // Request notification permission for queue alerts
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        // Request notification permission for queue alerts and auth failures
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+
+        // Proactively validate the token on launch to catch expired tokens early
+        helper.validateTokenOnLaunch { success, error in
+            if !success {
+                MessageQueue.shared.logEvent(.tokenRefreshFailed, detail: "Launch validation failed: \(error ?? "unknown")")
+            }
+        }
     }
 
     var body: some Scene {
