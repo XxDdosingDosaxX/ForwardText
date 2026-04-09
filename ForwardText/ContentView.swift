@@ -272,8 +272,8 @@ struct OAuthReauthView: View {
     @State private var status: String = ""
     @State private var isLoading = false
 
-    // Use a custom URI scheme for the OAuth redirect
-    private let redirectURI = "com.kothari.forwardtext:/oauth2callback"
+    // Use localhost redirect (registered in Google Cloud Console as Web Application client)
+    private let redirectURI = "http://localhost:3000/oauth2callback"
 
     var body: some View {
         NavigationStack {
@@ -285,24 +285,11 @@ struct OAuthReauthView: View {
                 Text("Re-authenticate Gmail")
                     .font(.title2.bold())
 
-                Text("Your Gmail token has expired. This happens when Google's OAuth app is in testing mode (tokens last 7 days). Tap below to sign in again and get a fresh token.")
+                Text("Your Gmail access token has expired. Tap below to sign in again and get a fresh token.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-
-                VStack(spacing: 8) {
-                    Text("Why does this keep happening?")
-                        .font(.headline)
-                    Text("Google OAuth apps in 'Testing' mode expire refresh tokens after 7 days. To fix permanently, the Google Cloud project must be published to 'Production' status (requires verification). Until then, re-authenticate here when it expires.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal)
-                }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-                .padding(.horizontal)
 
                 if isLoading {
                     ProgressView("Authenticating...")
@@ -350,7 +337,7 @@ struct OAuthReauthView: View {
         // Use ASWebAuthenticationSession for secure in-app OAuth
         let session = ASWebAuthenticationSession(
             url: authURL,
-            callbackURLScheme: "com.kothari.forwardtext"
+            callbackURLScheme: "http"
         ) { callbackURL, error in
             DispatchQueue.main.async {
                 isLoading = false
