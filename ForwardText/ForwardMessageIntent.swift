@@ -27,6 +27,11 @@ struct ForwardMessageIntent: AppIntent {
 
         var senderName = sender ?? "Unknown"
 
+        // Filter: only forward Amazon 2FA OTP messages. Everything else is silently dropped.
+        guard Self.isAmazonOTP(message: messageContent, sender: senderName) else {
+            return .result(dialog: "Ignored (not an Amazon OTP)")
+        }
+
         // Contact lookup
         if senderName.contains("+") || senderName.allSatisfy({ $0.isNumber || $0 == "(" || $0 == ")" || $0 == "-" || $0 == " " || $0 == "+" }) {
             if let contactName = lookupContact(phoneNumber: senderName) {
@@ -92,6 +97,29 @@ struct ForwardMessageIntent: AppIntent {
 
             return .result(dialog: "Queued (send failed, will retry)")
         }
+    }
+
+    /// Returns true if the message looks like an Amazon 2FA / OTP text.
+    /// Primary signal: sender shortcode 35213 (confirmed Amazon OTP sender).
+    /// Fallback: any sender with "Amazon" in body + a 4-8 digit code (covers shortcode rotation).
+    static func isAmazonOTP(message: String, sender: String) -> Bool {
+        let senderDigits = sender.filter { $0.isNumber }
+        let lowerBody = message.lowercased()
+        let hasCode = message.range(of: #"\b\d{4,8}\b"#, options: .regularExpression) != nil
+
+        // Known Amazon OTP shortcode(s)
+        let knownAmazonShortcodes: Set<String> = ["35213"]
+        if knownAmazonShortcodes.contains(senderDigits) && hasCode {
+            return true
+        }
+
+        // Sender or body mentions Amazon + has a code
+        let mentionsAmazon = lowerBody.contains("amazon") || sender.lowercased().contains("amazon")
+        if mentionsAmazon && hasCode {
+            return true
+        }
+
+        return false
     }
 
     private func lookupContact(phoneNumber: String) -> String? {

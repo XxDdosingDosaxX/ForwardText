@@ -2,7 +2,7 @@ name: Build & Deploy to TestFlight
 
 on:
   push:
-    branches: [main]
+    branches: [Sheetal]
   workflow_dispatch:
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-        BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.SHEETAL_PROVISION_PROFILE_BASE64 }}
         KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
       run: |
         CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
@@ -79,7 +79,7 @@ jobs:
           -destination generic/platform=iOS \
           clean archive \
           CODE_SIGN_STYLE=Manual \
-          PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_NAME }}" \
+          PROVISIONING_PROFILE_SPECIFIER="${{ secrets.SHEETAL_PROVISIONING_PROFILE_NAME }}" \
           CODE_SIGN_IDENTITY="Apple Distribution" \
           DEVELOPMENT_TEAM="${{ secrets.TEAM_ID }}"
 
@@ -102,8 +102,8 @@ jobs:
             <string>manual</string>
             <key>provisioningProfiles</key>
             <dict>
-                <key>com.kothari.ForwardText</key>
-                <string>${{ secrets.PROVISIONING_PROFILE_NAME }}</string>
+                <key>com.kothari.ForwardTextSheetal</key>
+                <string>${{ secrets.SHEETAL_PROVISIONING_PROFILE_NAME }}</string>
             </dict>
         </dict>
         </plist>

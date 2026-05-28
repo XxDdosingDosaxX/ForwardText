@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>Forward Text</string>
+    <string>Amazon OTP</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -19,7 +19,7 @@
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleVersion</key>
-    <string>18</string>
+    <string>1</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UIApplicationSceneManifest</key>
@@ -51,10 +51,10 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.kothari.ForwardText</string>
+            <string>com.kothari.ForwardTextSheetal</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>com.kothari.forwardtext</string>
+                <string>com.kothari.forwardtextsheetal</string>
             </array>
         </dict>
     </array>

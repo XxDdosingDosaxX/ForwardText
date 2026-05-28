@@ -22,9 +22,9 @@ targets:
       - ForwardText
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.kothari.ForwardText
+        PRODUCT_BUNDLE_IDENTIFIER: com.kothari.ForwardTextSheetal
         INFOPLIST_FILE: ForwardText/Info.plist
         CODE_SIGN_IDENTITY: "Apple Distribution"
-        PROVISIONING_PROFILE_SPECIFIER: "ForwardText App Store"
+        PROVISIONING_PROFILE_SPECIFIER: "ForwardText Sheetal App Store"
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
