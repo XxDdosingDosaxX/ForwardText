@@ -241,15 +241,43 @@ class ForwardMessageHelper {
 
     // MARK: - Gmail API Send
 
-    private func sendEmail(to email: String, subject: String, body: String, accessToken: String, completion: @escaping (Bool, String) -> Void) {
-        let rawEmail = """
-        From: \(email)
-        To: \(email)
-        Subject: \(subject)
-        Content-Type: text/plain; charset=utf-8
+    /// Encode a header value as RFC 2047 encoded-words if it contains non-ASCII.
+    /// Raw UTF-8 in a MIME header renders as mojibake, which is why em dashes and
+    /// emoji in sender names showed up as garbled bytes in the subject line.
+    private func encodeHeader(_ value: String) -> String {
+        guard value.unicodeScalars.contains(where: { !$0.isASCII }) else { return value }
 
-        \(body)
-        """
+        // Each encoded-word must stay under 76 chars: "=?UTF-8?B?" + payload + "?=".
+        // 45 source bytes -> 60 base64 chars -> 72 total, safely inside the limit.
+        let maxBytes = 45
+        var chunks: [String] = []
+        var current = Data()
+
+        for character in value {
+            let bytes = Data(String(character).utf8)
+            // Never split a character across two encoded-words.
+            if !current.isEmpty && current.count + bytes.count > maxBytes {
+                chunks.append(current.base64EncodedString())
+                current = Data()
+            }
+            current.append(bytes)
+        }
+        if !current.isEmpty { chunks.append(current.base64EncodedString()) }
+
+        // Continuation lines are folded with CRLF + a single space.
+        return chunks.map { "=?UTF-8?B?\($0)?=" }.joined(separator: "\r\n ")
+    }
+
+    private func sendEmail(to email: String, subject: String, body: String, accessToken: String, completion: @escaping (Bool, String) -> Void) {
+        let headers = [
+            "From: \(email)",
+            "To: \(email)",
+            "Subject: \(encodeHeader(subject))",
+            "MIME-Version: 1.0",
+            "Content-Type: text/plain; charset=utf-8",
+        ]
+        // Body stays plain UTF-8 so existing readers keep parsing it unchanged.
+        let rawEmail = headers.joined(separator: "\r\n") + "\r\n\r\n" + body
 
         let base64Email = rawEmail.data(using: .utf8)!
             .base64EncodedString()
