@@ -1,0 +1,36 @@
+name: Refresh Signing Assets
+
+# Re-issues the Apple Distribution certificate and both App Store provisioning
+# profiles through the App Store Connect API, then publishes them as an
+# artifact so they can be installed as repository secrets.
+on:
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: pip install --quiet pyjwt cryptography
+
+    - name: Re-issue certificate and profiles
+      env:
+        APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+      run: python scripts/refresh_signing.py
+
+    - name: Upload signing assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: signing-assets
+        path: out/
+        retention-days: 1
