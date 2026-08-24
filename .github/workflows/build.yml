@@ -7,18 +7,21 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Select Xcode
       run: |
-        # Use latest available Xcode
-        ls /Applications/Xcode*.app/Contents/Developer 2>/dev/null | head -5
+        # Apple requires the iOS 26 SDK (Xcode 26+) for all App Store uploads.
+        # Pick the highest Xcode the runner has.
+        ls -d /Applications/Xcode*.app 2>/dev/null
         XCODE_PATH=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
         echo "Using: $XCODE_PATH"
         sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+        xcodebuild -version
+        echo "iOS SDKs:"; xcodebuild -showsdks | grep -i ios || true
 
     - name: Install XcodeGen
       run: brew install xcodegen
